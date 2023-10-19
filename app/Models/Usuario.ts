@@ -1,30 +1,97 @@
-import { DateTime } from 'luxon'
 import Hash from '@ioc:Adonis/Core/Hash'
-import { column, beforeSave, BaseModel } from '@ioc:Adonis/Lucid/Orm'
+import { BaseModel, beforeSave, column } from '@ioc:Adonis/Lucid/Orm'
+import { formatarNumero, formatarString } from 'App/Util/Format'
+import { DateTime } from 'luxon'
 
 export default class Usuario extends BaseModel {
+  public static table = 'public.usuario'
+
   @column({ isPrimary: true })
   public id: number
 
+  // ID da unidade principal associada ao usuário.
   @column()
-  public email: string
+  public unidadeId: number
 
-  @column({ serializeAs: null })
+  // ID do setor associado ao usuário.
+  @column()
+  public setorId: number
+
+  // ID da função do usuário.
+  @column()
+  public funcaoId: number
+
+  // Nome do usuário.  
+  @column()
+  public nome: string | null
+
+  // Cpf do usuário.
+  @column()
+  public cpf: string | null
+
+  // Senha do usuário.
+  @column({ serializeAs: null, columnName: 'senha' })
   public password: string
 
+  // Porcentagem máxima de desconto que o usuário pode dar.
   @column()
-  public rememberMeToken: string | null
+  public porcentagemDesconto: number
 
+  // Timestamp do ultimo acesso ao sistemas.
+  @column.dateTime()
+  public ultimoAcesso: DateTime
+
+  // Timestamp do ultimo sincronismo, quando for cobrador ou vendedor.
+  @column.dateTime()
+  public ultimoSincronismo: DateTime
+
+  // Indica se o usuário está ativo.
+  @column()
+  public ativo: boolean
+
+  // Data de criação do registro.
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
+  // Nome do criador do registro.
+  @column()
+  public createdBy: string | null
+
+  // Data de atualização do registro.
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
 
+  // Nome do responsável pela atualização do registro.
+  @column()
+  public updatedBy: string | null
+
+  /**
+  * Método de gancho (hook) que gera um hash da senha antes de salvá-la
+  *
+  * @param {Usuario} user - O objeto Usuario da senha a ser criptografada.
+  *
+  * @memberOf Usuario
+  */
   @beforeSave()
-  public static async hashPassword (usuario: Usuario) {
-    if (usuario.$dirty.password) {
-      usuario.password = await Hash.make(usuario.password)
+  public static async hashPassword(user: Usuario) {
+    if (user.$dirty.password) {
+      user.password = await Hash.make(user.password)
+
     }
+  }
+
+  /**
+  * Método de gancho (hook) que formata os campos do dependente antes de salvá-los.
+  *
+  * @param {Usuario} usuario - O objeto Usuario a ser formatado.
+  *
+  * @memberOf Usuario
+  */
+  @beforeSave()
+  public static async formatFields(usuario: Usuario) {
+    usuario.nome = formatarString(usuario.nome)
+    usuario.cpf = formatarNumero(usuario.cpf)
+    usuario.createdBy = formatarString(usuario.createdBy)
+    usuario.updatedBy = formatarString(usuario.updatedBy)
   }
 }
